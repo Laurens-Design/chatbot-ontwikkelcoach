@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ontwikkel Coach Chatbot</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f9;
+      margin: 0; padding: 0;
+      display: flex; flex-direction: column;
+      height: 100vh;
+    }
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      background: white;
+      border-bottom: 1px solid #ddd;
+    }
+    .message {
+      margin: 8px 0;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 80%;
+    }
+    .user {
+      background: #007bff;
+      color: white;
+      align-self: flex-end;
+    }
+    .bot {
+      background: #e2e2e2;
+      color: #333;
+      align-self: flex-start;
+    }
+    #input-form {
+      display: flex;
+      padding: 10px;
+      background: white;
+    }
+    #input-text {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-right: 10px;
+    }
+    #submit-btn {
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    #submit-btn:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div id="chat"></div>
+  <form id="input-form">
+    <input id="input-text" type="text" autocomplete="off" placeholder="Typ je vraag..." required />
+    <button id="submit-btn" type="submit">Verstuur</button>
+  </form>
+
+  <script>
+    const chat = document.getElementById('chat');
+    const form = document.getElementById('input-form');
+    const input = document.getElementById('input-text');
+    const submitBtn = document.getElementById('submit-btn');
+
+    function addMessage(text, sender) {
+      const msg = document.createElement('div');
+      msg.className = 'message ' + sender;
+      msg.textContent = text;
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function sendMessage(message) {
+      addMessage(message, 'user');
+      submitBtn.disabled = true;
+
+      try {
+        const response = await fetch('/.netlify/functions/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+        const data = await response.json();
+        if (data.error) {
+          addMessage('Er is een fout opgetreden: ' + data.error, 'bot');
+        } else {
+          addMessage(data.reply, 'bot');
+        }
+      } catch (err) {
+        addMessage('Fout bij verbinding: ' + err.message, 'bot');
+      } finally {
+        submitBtn.disabled = false;
+        input.value = '';
+        input.focus();
+      }
+    }
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const message = input.value.trim();
+      if (message) {
+        sendMessage(message);
+      }
+    });
+
+    // Begroeting
+    addMessage('Hallo! Stel je vraag over verandermanagement.', 'bot');
+  </script>
+</body>
+</html>
